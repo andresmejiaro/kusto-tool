@@ -1,16 +1,10 @@
-"""Classes for interacting with a Kusto database."""
+"""Classes for building Kusto query text."""
 import os
 from collections.abc import KeysView
-from pathlib import Path
-from timeit import default_timer as timer
 
 import jinja2 as jj
-import pandas as pd
-from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
-from azure.kusto.data.helpers import dataframe_from_result_table
-from loguru import logger
 
-from kusto_tool.expression import KTYPES, TableExpr, quote
+from kusto_tool.expression import TableExpr, quote
 
 
 def list_to_kusto(lst):
@@ -74,9 +68,9 @@ docstring = "{{ docstring }}",
 
 
 class KustoDatabase:
-    """A class representing a Kusto database."""
+    """A lightweight database context for query rendering."""
 
-    def __init__(self, cluster, database, client=None):
+    def __init__(self, cluster, database):
         """A class representing a Kusto database.
 
         Parameters
@@ -85,14 +79,9 @@ class KustoDatabase:
             The cluster name.
         database: str
             The database name.
-        client: KustoClient, default None
-            Pass this if you wish to provide your own KustoClient.
         """
         self.cluster = cluster
-        self.cluster_uri = f"https://{cluster}.kusto.windows.net"
         self.database = database
-        kcsb = KustoConnectionStringBuilder.with_az_cli_authentication(self.cluster_uri)
-        self.client = client or KustoClient(kcsb)
 
     def table(self, name, columns=None, inspect=False):
         """A tabular expression.
@@ -107,8 +96,7 @@ class KustoDatabase:
             data type names, or
             2. A list of Column instances.
         inspect: bool, default False
-            If true, columns will be inspected from the database. If columns
-            list is provided and inspect is true, inspect takes precedence.
+            Not supported in query-only mode.
 
         Returns
         -------
@@ -116,150 +104,12 @@ class KustoDatabase:
             A table expression instance.
         """
         if inspect:
-            columns = self.execute(f".show table {name} cslschema").Schema
-            if len(columns) < 1:
-                raise KeyError(f"Table {name} does not exist in the database.")
-            columns = columns.item()
-            columns = columns.split(",")
-            columns = {col.split(":")[0]: KTYPES[col.split(":")[1]] for col in columns}
+            raise RuntimeError("inspect=True is not supported in query-only mode.")
         return TableExpr(name, database=self, columns=columns)
 
-    def execute(self, query: str, *args, **kwargs):
-        """Execute a query or command.
-
-        Parameters
-        ----------
-        query: str
-            The text of the Kusto query or command to run. Can also be a path to
-            a file containing a query.
-        args: List[Any]
-            Positional arguments to pass to the query as Jinja2 template params.
-        kwargs: Dict[Any]
-            Keyword arguments to pass to the query as Jinja2 template params.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing the query results.
-        """
-        query = maybe_read_file(query)
-        query_rendered = render_template_query(query, *args, **kwargs)
-
-        method = (
-            self.client.execute_mgmt
-            if query_rendered.startswith(".")
-            else self.client.execute_query
-        )
-        logger.info("Executing query on {}: {}", self.database, query_rendered)
-        start_time = timer()
-        result = method(self.database, query_rendered)
-        end_time = timer()
-        duration = end_time - start_time
-        logger.info("Query execution completed in {:.2f} seconds.", duration)
-        return dataframe_from_result_table(result.primary_results[0])
-
-    def show_tables(self):
-        """Show the list of tables in the database.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame listing all tables in the database, in the column "TableName".
-        """
-        return self.execute(".show tables")
-
-    def drop_table(self, table):
-        """Drop a table from the database.
-
-        Parameters
-        ----------
-        table: str
-            The name of the table to drop.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing the name of the dropped table, indicating success.
-        """
-        return self.execute(f".drop table {table}")
-
-    def table_exists(self, table: str) -> bool:
-        """Check if a table exists in the database.
-
-        Parameters
-        ----------
-        table: str
-            The name of the table to look for.
-
-        Returns
-        -------
-        bool
-            True if the table exists in the database.
-        """
-        tables = self.show_tables()
-        return table in tables.TableName.tolist()
-
-    def set_table(self, query, table, folder, docstring, *args, **kwargs):
-        """
-        Runs your query and appends or replaces the results to a table.
-
-        Parameters
-        ----------
-        query: str
-            The text of the Kusto query to run.
-        table: str
-            The table name to create.
-        folder: str
-            The kusto folder to save the table into.
-        docstring: str
-            The docstring for the table metadata.
-        replace: bool, default False.
-            Appends to the table if True, replaces contents if False.
-        args: List[Any]
-            Positional arguments to pass to the query as Jinja2 template params.
-        kwargs: Dict[Any]
-            Keyword arguments to pass to the query as Jinja2 template params.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing the results of the control command.
-        """
-        return self.execute(
-            render_set(query, table, folder, docstring, replace=False, *args, **kwargs),
-        )
-
-    def to_parquet(self, query, path, *args, force=False, **kwargs):
-        """Run the given query, cache the results as a local parquet file, and
-        return results as a Pandas DataFrame.
-
-        Parameters
-        ----------
-        query: str
-            The text of the Kusto query to run.
-        path: str
-            The path to save the parquet file.
-        force: bool, default False
-            If False, the data will be read from the cached parquet file if it
-            exists. If True, the data will be re-downloaded regardless.
-        args: List[Any]
-            Positional arguments to pass to the query as Jinja2 template params.
-        kwargs: Dict[Any]
-            Keyword arguments to pass to the query as Jinja2 template params.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A DataFrame containing the results of the control command.
-        """
-        if not force:
-            if os.path.isfile(path):
-                logger.info("Reading dataframe from existing file {}", path)
-                return pd.read_parquet(path)
-        logger.info("File {} does not exist, will run query.", path)
-        df = self.execute(query, *args, **kwargs)
-        df.to_parquet(path, index=False)
-        return df
+    def table_ref(self, name: str) -> str:
+        """Render the table reference string for this context."""
+        return f"cluster('{self.cluster}').database('{self.database}').['{name}']"
 
     def __str__(self):
         return f"{str(self.cluster)}.database('{self.database}')"
@@ -295,3 +145,41 @@ def cluster(name):
     Makes the query look more like KQL.
     """
     return Cluster(name)
+
+
+def table(name, columns=None):
+    """Construct a table expression without a cluster/database context."""
+    return TableExpr(name, database=None, columns=columns)
+
+
+def database(name, cluster_name=None):
+    """Convenience function to construct a KustoDatabase instance.
+
+    Parameters
+    ----------
+    name: str
+        Database name.
+    cluster_name: str, default None
+        Optional cluster name to include in the rendered table ref.
+    """
+    if cluster_name is None:
+        return DatabaseRef(name)
+    return KustoDatabase(cluster_name, name)
+
+
+class DatabaseRef:
+    """A database-only context for query rendering."""
+
+    def __init__(self, name: str):
+        self.database = name
+
+    def table(self, name, columns=None, inspect=False):
+        if inspect:
+            raise RuntimeError("inspect=True is not supported in query-only mode.")
+        return TableExpr(name, database=self, columns=columns)
+
+    def table_ref(self, name: str) -> str:
+        return f"database('{self.database}').['{name}']"
+
+    def __str__(self):
+        return f"database('{self.database}')"

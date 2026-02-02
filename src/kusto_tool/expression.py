@@ -518,15 +518,15 @@ class Expand:
 class TableExpr:
     """A table or tabular expression."""
 
-    def __init__(self, name, database, columns=None, ast=None):
+    def __init__(self, name, database=None, columns=None, ast=None):
         """A tabular expression.
 
         Parameters
         ----------
         name: str
             The name of the table in the database.
-        database: KustoDatabase
-            The database containing the table.
+        database: KustoDatabase or DatabaseRef or None
+            Optional context used to render table references.
         columns: dict or list
             Either:
             1. A dictionary where keys are column names and values are
@@ -579,9 +579,12 @@ class TableExpr:
         )
 
     def collect(self):
-        """Compile the expression to a query, execute it, and return results."""
-        query_str = str(self)
-        return self.database.execute(query_str)
+        """Compile the expression to a query string."""
+        return str(self)
+
+    def to_kql(self):
+        """Compile the expression to a query string."""
+        return str(self)
 
     def count(self):
         """Get the count of rows that would be returned by the expression."""
@@ -799,10 +802,11 @@ class TableExpr:
         )
 
     def __str__(self):
-        ops = [
-            f"cluster('{self.database.cluster}').database('{self.database.database}').['{self.name}']",
-            *self._ast,
-        ]
+        if self.database and hasattr(self.database, "table_ref"):
+            table_ref = self.database.table_ref(self.name)
+        else:
+            table_ref = self.name
+        ops = [table_ref, *self._ast]
         query_str = "\n".join([str(op) for op in ops]) + "\n"
         return query_str
 

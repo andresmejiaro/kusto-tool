@@ -1,4 +1,1 @@
-azure-kusto-data
-loguru
-Jinja2 
-pandas
+Jinja2

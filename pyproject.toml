@@ -9,10 +9,9 @@ readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["azure-kusto-data", "loguru", "Jinja2", "pandas"]
+dependencies = ["Jinja2"]
 
 [project.optional-dependencies]
-azure-cli = ["azure-cli"]
 dev = [
     "black",
     "pylint",

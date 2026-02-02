@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-02-02
+
+- Remove ADX execution/connectors; query generation only
+- Add table/database context helpers and `to_kql()` alias
+
 ## 2023-02-15
 
 - Use `repr()` inside of `quote()` so that escaping is preserved

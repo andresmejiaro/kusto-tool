@@ -1,6 +1,6 @@
 from kusto_tool.expression import Join, TableExpr
 
-from .fake_database import FakeDatabase
+from kusto_tool.database import KustoDatabase
 
 
 def test_join_str():
@@ -12,7 +12,7 @@ def test_join_str():
 
 
 def test_table_shuffle_join():
-    db = FakeDatabase("test", "testdb")
+    db = KustoDatabase("test", "testdb")
     t1 = TableExpr("table1", db, columns=dict(foo=str, bar=str, baz=int))
     t2 = TableExpr("table2", db, columns=dict(foo=str, bar=str, baz=int))
     join = t1.join(t2, on=["foo", "bar"], kind="inner", strategy="shuffle")
@@ -27,7 +27,7 @@ def test_table_shuffle_join():
 
 
 def test_table_shuffle_join():
-    db = FakeDatabase("test", "testdb")
+    db = KustoDatabase("test", "testdb")
     t1 = TableExpr("table1", db, columns=dict(foo=str, bar=str, baz=int))
     t2 = TableExpr("table2", db, columns=dict(foo=str, bar=str, baz=int))
     join = t1.join(t2, on=["foo", "bar"], kind="inner")
@@ -42,7 +42,7 @@ def test_table_shuffle_join():
 
 
 def test_broadcast_join_str():
-    db = FakeDatabase("test", "testdb")
+    db = KustoDatabase("test", "testdb")
     t1 = TableExpr("table1", db, columns=dict(foo=str, bar=str, baz=int))
     result = str(Join(t1, on="foo", kind="inner", strategy="broadcast"))
     expected = """| join kind=inner hint.strategy=broadcast (
@@ -52,7 +52,7 @@ def test_broadcast_join_str():
 
 
 def test_other_join_str():
-    db = FakeDatabase("test", "testdb")
+    db = KustoDatabase("test", "testdb")
     t1 = TableExpr("table1", db, columns=dict(foo=str, bar=str, baz=int))
     result = str(Join(t1, on="foo", kind="inner", strategy="silly"))
     expected = """| join kind=inner (

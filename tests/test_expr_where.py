@@ -1,12 +1,11 @@
 from kusto_tool import expression as exp
+from kusto_tool.database import KustoDatabase
 from pytest import fixture
-
-from .fake_database import FakeDatabase
 
 
 @fixture
 def db():
-    return FakeDatabase("test", "testdb")
+    return KustoDatabase("test", "testdb")
 
 
 @fixture

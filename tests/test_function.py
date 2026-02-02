@@ -3,7 +3,7 @@ from datetime import datetime
 import kusto_tool.function as F
 from kusto_tool.expression import Column, Summarize, TableExpr
 
-from .fake_database import FakeDatabase
+from kusto_tool.database import KustoDatabase
 
 
 def test_function():
@@ -18,7 +18,7 @@ def test_strcat():
 
 def test_dcount_str():
     """dcount works correctly for a string arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(dcount_foo=F.dcount("foo", 2))
     assert "dcount_foo" in query.columns
@@ -34,7 +34,7 @@ def test_dcount_str():
 
 def test_dcount_col():
     """dcount works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(dcount_foo=tbl.foo.dcount(2))
     assert "dcount_foo" in query.columns
@@ -50,7 +50,7 @@ def test_dcount_col():
 
 def test_avg_col():
     """avg works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(avg_foo=tbl.foo.avg())
     assert "avg_foo" in query.columns
@@ -66,7 +66,7 @@ def test_avg_col():
 
 def test_avg_function_col():
     """avg works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(avg_foo=F.avg(tbl.foo))
     assert "avg_foo" in query.columns
@@ -82,7 +82,7 @@ def test_avg_function_col():
 
 def test_avg_function_str():
     """avg works correctly for a str arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(avg_foo=F.avg("foo"))
     assert "avg_foo" in query.columns
@@ -98,7 +98,7 @@ def test_avg_function_str():
 
 def test_mean_function_col():
     """avg works correctly for a col arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(avg_foo=F.mean(tbl.foo))
     assert "avg_foo" in query.columns
@@ -114,7 +114,7 @@ def test_mean_function_col():
 
 def test_mean_column():
     """avg works correctly."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(avg_foo=tbl.foo.mean())
     assert "avg_foo" in query.columns
@@ -130,7 +130,7 @@ def test_mean_column():
 
 def test_count():
     """avg works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.summarize(ct=F.count())
     assert "ct" in query.columns
@@ -146,7 +146,7 @@ def test_count():
 
 def test_startofday():
     """startofday works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(daystart=F.startofday(tbl.foo))
     assert "daystart" in query.columns
@@ -161,7 +161,7 @@ def test_startofday():
 
 def test_startofday_offset():
     """startofday works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(daystart=F.startofday(tbl.foo, 1))
     assert "daystart" in query.columns
@@ -176,7 +176,7 @@ def test_startofday_offset():
 
 def test_endofday():
     """startofday works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(daystart=F.endofday(tbl.foo))
     assert "daystart" in query.columns
@@ -191,7 +191,7 @@ def test_endofday():
 
 def test_endofday_offset():
     """startofday works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(daystart=F.endofday(tbl.foo, 1))
     assert "daystart" in query.columns
@@ -206,7 +206,7 @@ def test_endofday_offset():
 
 def test_startofweek():
     """startofweek works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(weekstart=F.startofweek(tbl.foo))
     assert "weekstart" in query.columns
@@ -221,7 +221,7 @@ def test_startofweek():
 
 def test_startofweek_offset():
     """startofweek works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(weekstart=F.startofweek(tbl.foo, 1))
     assert "weekstart" in query.columns
@@ -236,7 +236,7 @@ def test_startofweek_offset():
 
 def test_endofweek():
     """endofweek works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(weekend=F.endofweek(tbl.foo))
     assert "weekend" in query.columns
@@ -251,7 +251,7 @@ def test_endofweek():
 
 def test_endofweek_offset():
     """endofweek works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(weekend=F.endofweek(tbl.foo, 1))
     assert "weekend" in query.columns
@@ -266,7 +266,7 @@ def test_endofweek_offset():
 
 def test_startofmonth():
     """startofmonth works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(monthstart=F.startofmonth(tbl.foo))
     assert "monthstart" in query.columns
@@ -281,7 +281,7 @@ def test_startofmonth():
 
 def test_startofmonth_offset():
     """startofmonth works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(monthstart=F.startofmonth(tbl.foo, 1))
     assert "monthstart" in query.columns
@@ -296,7 +296,7 @@ def test_startofmonth_offset():
 
 def test_endofmonth():
     """endofmonth works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(monthend=F.endofmonth(tbl.foo))
     assert "monthend" in query.columns
@@ -311,7 +311,7 @@ def test_endofmonth():
 
 def test_endofmonth_offset():
     """endofmonth works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(monthend=F.endofmonth(tbl.foo, 1))
     assert "monthend" in query.columns
@@ -326,7 +326,7 @@ def test_endofmonth_offset():
 
 def test_startofyear():
     """startofyear works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(yearstart=F.startofyear(tbl.foo))
     assert "yearstart" in query.columns
@@ -341,7 +341,7 @@ def test_startofyear():
 
 def test_startofyear_offset():
     """startofyear works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(yearstart=F.startofyear(tbl.foo, 1))
     assert "yearstart" in query.columns
@@ -356,7 +356,7 @@ def test_startofyear_offset():
 
 def test_endofyear():
     """endofyear works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(yearend=F.endofyear(tbl.foo))
     assert "yearend" in query.columns
@@ -371,7 +371,7 @@ def test_endofyear():
 
 def test_endofyear_offset():
     """endofyear works correctly for a column arg."""
-    db = FakeDatabase("help", "Samples")
+    db = KustoDatabase("help", "Samples")
     tbl = TableExpr("tbl", database=db, columns={"foo": datetime})
     query = tbl.project(yearend=F.endofyear(tbl.foo, 1))
     assert "yearend" in query.columns

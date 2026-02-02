@@ -1,10 +1,7 @@
-from azure.kusto.data.helpers import dataframe_from_result_table
 from pytest import raises
 
-from kusto_tool import database as kdb
+import kusto_tool.database as kdb
 from kusto_tool import expression as exp
-
-from .fake_database import FakeDatabase, FakeKustoClient, FakeKustoResultTable
 
 
 def test_dict_to_datatable():
@@ -131,7 +128,7 @@ def test_tableexpr_project():
 
 
 def test_collect():
-    db = FakeDatabase("test", "testdb")
+    db = kdb.KustoDatabase("test", "testdb")
     tbl = kdb.TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = tbl.project(tbl.foo, tbl.bar, baz=tbl.bar).collect()
     expected = (
@@ -141,7 +138,7 @@ def test_collect():
 
 
 def test_count():
-    db = FakeDatabase("test", "testdb")
+    db = kdb.KustoDatabase("test", "testdb")
     tbl = kdb.TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     query = str(tbl.project(tbl.foo, tbl.bar).count())
     expected = "cluster('test').database('testdb').['tbl']\n| project\n\tfoo,\n\tbar\n| count\n"
@@ -153,7 +150,7 @@ def test_count_repr():
 
 
 def test_table_distinct():
-    db = FakeDatabase("test", "testdb")
+    db = kdb.KustoDatabase("test", "testdb")
     tbl = kdb.TableExpr("tbl", database=db, columns={"foo": str, "bar": int})
     q = str(tbl.distinct(tbl.bar, tbl.foo))
     ex = "cluster('test').database('testdb').['tbl']\n| distinct bar,\nfoo\n"
@@ -175,13 +172,13 @@ def test_expression_repr():
 
 
 def test_get_columns():
-    db = FakeDatabase("test", "testdb")
+    db = kdb.KustoDatabase("test", "testdb")
     tbl = kdb.TableExpr("tbl", database=db, columns={"foo": str})
     assert tbl.foo == tbl.columns["foo"]
 
 
 def test_extend():
-    db = FakeDatabase("test", "testdb")
+    db = kdb.KustoDatabase("test", "testdb")
     tbl = kdb.TableExpr("tbl", database=db, columns={"foo": str})
     tbl_2 = tbl.extend(bar="baz")
     query = str(tbl_2)
