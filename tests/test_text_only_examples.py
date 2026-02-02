@@ -1,12 +1,12 @@
 from kusto_tool import col, q
-from kusto_tool.function import sum
+from kusto_tool.function import sum_
 
 
 def test_text_only_summarize_example():
     query = (
         q("StormEvents")
         .project("State", "EventType", "DamageProperty")
-        .summarize(sum_damage=sum("DamageProperty"), by=["State", "EventType"])
+        .summarize(sum_damage=sum_("DamageProperty"), by=["State", "EventType"])
         .sort("sum_damage")
         .limit(20)
     )

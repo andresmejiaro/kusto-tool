@@ -82,6 +82,12 @@ def quote(val):
 
 
 class Prefix:
+    """Prefix expression node for KQL functions and operators.
+
+    Examples
+    --------
+    ``sum(Column("x"))`` renders as ``sum(x)``.
+    """
     def __init__(self, op, *args, agg=False, dtype=Any):
         self.terms = args
         self.op = op
@@ -94,6 +100,12 @@ class Prefix:
 
 
 class Between:
+    """Between expression node.
+
+    Examples
+    --------
+    ``Column("x").between(1, 10)`` renders as ``x between(1 .. 10)``.
+    """
     def __init__(self, lhs, left, right, negate=False):
         self.lhs = lhs
         self.left = left
@@ -108,6 +120,12 @@ class Between:
 
 class Infix:
     # TODO: does this need __add__, __sub__?
+    """Infix expression node for binary operators.
+
+    Examples
+    --------
+    ``col("x") == 1`` renders as ``x == 1``.
+    """
     def __init__(self, op, lhs, rhs, dtype=Any):
         self.op = op
         self.lhs = lhs
@@ -133,13 +151,17 @@ class Infix:
 
 
 def typeof(expr):
-    """Get the type of an expression."""
+    """Return the Python type associated with an expression.
+
+    For schema-free expressions, this may be ``typing.Any``.
+    """
     if isinstance(expr, (Infix, Prefix, Column)):
         return expr.dtype
     return type(expr)
 
 
 class Project:
+    """Project operator builder."""
     def __init__(self, *args, **kwargs):
         self.columns = list(args)
         self.renamed_columns = kwargs
@@ -157,6 +179,7 @@ class Project:
 
 
 class Count:
+    """Count operator builder."""
     def __repr__(self):
         return "Count()"
 
@@ -192,6 +215,7 @@ class SampleDistinct:
 
 
 class Distinct:
+    """Distinct operator builder."""
     def __init__(self, *args):
         self.columns = list(args)
 
@@ -209,6 +233,11 @@ class Distinct:
 
 
 class Where:
+    """Where operator builder.
+
+    Accepts one or more boolean expressions. Multiple expressions are joined
+    with ``and``.
+    """
     def __init__(self, *args):
         self.expressions = list(args)
 
@@ -222,6 +251,7 @@ class Where:
 
 
 class Join:
+    """Join operator builder."""
     def __init__(self, right, on, kind, strategy=None):
         self.right = right
         self.on = [on] if isinstance(on, str) else on
@@ -241,6 +271,7 @@ class Join:
 
 
 class Summarize:
+    """Summarize (aggregate) operator builder."""
     def __init__(self, by=None, shuffle=False, shufflekey=None, num_partitions=None, **kwargs):
         # expressions in summarize must be aggregate functions.
         for _, v in kwargs.items():
@@ -293,6 +324,7 @@ class Summarize:
 
 
 class Extend:
+    """Extend operator builder."""
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
@@ -302,6 +334,7 @@ class Extend:
 
 
 class Property:
+    """Dynamic property accessor (``col.bagKey``)."""
     def __init__(self, column, prop):
         self.column = column
         self.prop = prop
@@ -311,6 +344,7 @@ class Property:
 
 
 class ListLit:
+    """List literal used for ``in`` operations."""
     def __init__(self, *args):
         self.args = list(args)
 
@@ -320,7 +354,11 @@ class ListLit:
 
 
 class Column:
-    """A column in a tabular expression."""
+    """A column in a tabular expression.
+
+    This class supports schema-free usage: pass a name with no known type,
+    then use Python operators to build expressions.
+    """
 
     def __init__(self, name: str, dtype: Any = Any, ascending: bool = False):
         """"""
@@ -446,6 +484,7 @@ class Column:
 
 
 class Evaluate:
+    """Evaluate operator builder for Kusto plugins."""
     def __init__(self, expr):
         self.expr = expr
 
@@ -482,11 +521,18 @@ def desc(expr):
 
 
 def col(name: str) -> Column:
-    """Create a column reference without schema."""
+    """Create a column reference without schema.
+
+    Parameters
+    ----------
+    name : str
+        Column name as used in KQL.
+    """
     return Column(name, Any)
 
 
 class Order:
+    """Order by operator builder."""
     def __init__(self, *args):
         self.args = args
 
@@ -505,6 +551,7 @@ class Order:
 
 
 class Limit:
+    """Limit operator builder."""
     def __init__(self, n):
         assert isinstance(n, int)
         self.n = n
@@ -514,6 +561,7 @@ class Limit:
 
 
 class Expand:
+    """mv-expand operator builder."""
     def __init__(self, column):
         self.column = column
 
@@ -522,7 +570,11 @@ class Expand:
 
 
 class TableExpr:
-    """A table or tabular expression."""
+    """A table or tabular expression.
+
+    This is the core query-builder type. It holds a table reference and a
+    list of operator nodes that are rendered into KQL.
+    """
 
     def __init__(self, name, database=None, columns=None, ast=None):
         """A tabular expression.
@@ -554,12 +606,20 @@ class TableExpr:
             raise ValueError("columns must be a dict or a list of Columns.")
 
     def __getattr__(self, name):
+        """Access a known column by attribute name.
+
+        Raises
+        ------
+        AttributeError
+            If the column is not present in the current schema map.
+        """
         try:
             return self.columns[name]
         except KeyError as exc:
             raise AttributeError from exc
 
     def __getitem__(self, name):
+        """Access a known column by ``[]`` lookup."""
         return self.__getattr__(name)
 
     def project(self, *args, **kwargs):
@@ -593,7 +653,10 @@ class TableExpr:
         )
 
     def collect(self):
-        """Compile the expression to a query string."""
+        """Compile the expression to a query string.
+
+        This is a compatibility alias for ``to_kql()``.
+        """
         return str(self)
 
     def to_kql(self):

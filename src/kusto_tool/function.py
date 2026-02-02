@@ -1,3 +1,18 @@
+"""Kusto function helpers.
+
+This module exposes small helpers that render common KQL function calls.
+All helpers return expression objects that stringify to valid KQL.
+
+Usage is schema-free: pass column names as strings or expression objects.
+
+Examples
+--------
+>>> from kusto_tool.function import sum_, dcount, startofday
+>>> sum_("DamageProperty")       # -> sum(DamageProperty)
+>>> dcount("State", accuracy=2)  # -> dcount(State, 2)
+>>> startofday("Timestamp")      # -> startofday(Timestamp)
+"""
+
 from datetime import datetime as dt
 from datetime import timedelta as td
 from decimal import Decimal
@@ -38,11 +53,26 @@ def sum(expr):
     Parameters
     ----------
     expr: str, Column or expression.
+
+    Notes
+    -----
+    This function shadows Python's built-in ``sum``. Prefer :func:`sum_` in
+    user code to avoid confusion.
     """
     # if sum gets a string, it's referring to a Column in the TableExpr.
     if isinstance(expr, str):
         expr = Column(expr, float)
     return Prefix(OP.SUM, expr, agg=True, dtype=float)
+
+
+def sum_(expr):
+    """Safe alias for :func:`sum` that avoids shadowing Python's built-in.
+
+    Parameters
+    ----------
+    expr: str, Column or expression.
+    """
+    return sum(expr)
 
 
 def avg(expr):
