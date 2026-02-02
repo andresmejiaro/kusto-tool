@@ -322,7 +322,7 @@ class ListLit:
 class Column:
     """A column in a tabular expression."""
 
-    def __init__(self, name: str, dtype: str, ascending: bool = False):
+    def __init__(self, name: str, dtype: Any = Any, ascending: bool = False):
         """"""
         self.name = name
         self.dtype = dtype
@@ -413,7 +413,8 @@ class Column:
 
     def bag_unpack(self):
         """Expand a dynamic property bag column into one column per property."""
-        assert self.dtype in [dict, "dynamic"]
+        if self.dtype not in [dict, "dynamic", Any, object]:
+            raise AssertionError("bag_unpack requires a dynamic column type.")
         return Prefix(OP.BAG_UNPACK, self)
 
     def asc(self):
@@ -478,6 +479,11 @@ def desc(expr):
         expr.ascending = False
         return expr
     return Column(expr, typeof(expr), asc=False)
+
+
+def col(name: str) -> Column:
+    """Create a column reference without schema."""
+    return Column(name, Any)
 
 
 class Order:
@@ -572,7 +578,15 @@ class TableExpr:
         A table expression.
         """
         renamed = {k: Column(k, typeof(v)) for k, v in kwargs.items()}
-        columns = {k: v for k, v in self.columns.items() if k in args}
+        columns = {}
+        for arg in args:
+            if isinstance(arg, Column):
+                columns[arg.name] = arg
+            elif isinstance(arg, str):
+                if arg in self.columns:
+                    columns[arg] = self.columns[arg]
+                else:
+                    columns[arg] = Column(arg, Any)
         columns = {**columns, **renamed}
         return TableExpr(
             self.name, self.database, columns=columns, ast=[*self._ast, Project(*args, **kwargs)]
@@ -666,7 +680,10 @@ class TableExpr:
         by_cols = {}
         for col in by:
             if isinstance(col, str):
-                col = self.columns[col]
+                if col in self.columns:
+                    col = self.columns[col]
+                else:
+                    col = Column(col, Any)
             by_cols[col.name] = col
 
         kwarg_cols = {k: Column(k, typeof(v)) for k, v in kwargs.items()}

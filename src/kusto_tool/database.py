@@ -152,6 +152,11 @@ def table(name, columns=None):
     return TableExpr(name, database=None, columns=columns)
 
 
+def q(name):
+    """Construct a table expression from a raw table name."""
+    return TableExpr(name, database=None, columns=None)
+
+
 def database(name, cluster_name=None):
     """Convenience function to construct a KustoDatabase instance.
 

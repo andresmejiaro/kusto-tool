@@ -8,14 +8,15 @@ Based on kusto-tool by Alex Kyllo. Vibecoded by Codex (ChatGPT).
 ## Demo
 
 ```python
-from kusto_tool import cluster, table, db
+from kusto_tool import table
+from kusto_tool.function import sum
 
-# With cluster/database context
-tbl = cluster("help").database("Samples").table("StormEvents")
+# No cluster/database context; just text generation
+tbl = table("StormEvents")
 query = (
-    tbl.project(tbl.State, tbl.EventType, tbl.DamageProperty)
-    .summarize(sum_damage=tbl.DamageProperty.sum(), by=[tbl.State, tbl.EventType])
-    .sort(tbl.sum_damage)
+    tbl.project("State", "EventType", "DamageProperty")
+    .summarize(sum_damage=sum("DamageProperty"), by=["State", "EventType"])
+    .sort("sum_damage")
     .limit(20)
 )
 print(query.to_kql())
@@ -23,7 +24,7 @@ print(query.to_kql())
 
 Expected output:
 ```text
-cluster('help').database('Samples').['StormEvents']
+StormEvents
 | project
 	State,
 	EventType,
@@ -37,7 +38,7 @@ cluster('help').database('Samples').['StormEvents']
 ```
 
 ```python
-# Without context (just table name)
+# Simple count
 print(table("StormEvents").count().to_kql())
 ```
 
@@ -45,17 +46,6 @@ Expected output:
 ```text
 StormEvents
 | count
-```
-
-```python
-# Database-only context
-print(db("Samples").table("StormEvents").limit(5).to_kql())
-```
-
-Expected output:
-```text
-database('Samples').['StormEvents']
-| limit 5
 ```
 
 Experimental, work-in-progress, unstable API.
