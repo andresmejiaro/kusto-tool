@@ -14,11 +14,11 @@ pip install kusto-tool
 ## Quickstart
 
 ```python
-from kusto_tool import col, q
+from kusto_tool import col, query
 from kusto_tool.function import sum_
 
 # No cluster/database context; just text generation
-tbl = q("StormEvents")
+tbl = query("StormEvents")
 query = (
     tbl.project("State", "EventType", "DamageProperty")
     .summarize(sum_damage=sum_("DamageProperty"), by=["State", "EventType"])
@@ -45,7 +45,7 @@ StormEvents
 
 ```python
 # Simple count
-print(q("StormEvents").count().to_kql())
+print(query("StormEvents").count().to_kql())
 ```
 
 Expected output:
@@ -57,7 +57,7 @@ StormEvents
 ```python
 # Filter with expression objects (no schema required)
 query = (
-    q("StormEvents")
+    query("StormEvents")
     .where(col("State") == "WA", col("DamageProperty") > 100000)
     .project("State", "EventType", "DamageProperty")
     .limit(10)

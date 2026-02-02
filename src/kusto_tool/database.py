@@ -257,6 +257,14 @@ def q(name):
     return TableExpr(name, database=None, columns=None)
 
 
+def query(name):
+    """Construct a table expression from a raw table name.
+
+    Alias for :func:`q` for readability.
+    """
+    return q(name)
+
+
 def database(name, cluster_name=None):
     """Convenience function to construct a KustoDatabase instance.
 

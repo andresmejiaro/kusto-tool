@@ -1,10 +1,10 @@
-from kusto_tool import col, q
+from kusto_tool import col, query
 from kusto_tool.function import sum_
 
 
 def test_text_only_summarize_example():
     query = (
-        q("StormEvents")
+        query("StormEvents")
         .project("State", "EventType", "DamageProperty")
         .summarize(sum_damage=sum_("DamageProperty"), by=["State", "EventType"])
         .sort("sum_damage")
@@ -27,7 +27,7 @@ def test_text_only_summarize_example():
 
 def test_text_only_filter_example():
     query = (
-        q("StormEvents")
+        query("StormEvents")
         .where(col("State") == "WA", col("DamageProperty") > 100000)
         .project("State", "EventType", "DamageProperty")
         .limit(10)

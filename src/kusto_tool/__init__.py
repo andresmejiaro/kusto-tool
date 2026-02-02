@@ -10,6 +10,7 @@ Cluster = _database_module.Cluster
 cluster = _database_module.cluster
 table = _database_module.table
 q = _database_module.q
+query = _database_module.query
 
 # Convenience alias; avoids shadowing the database module name.
 db = _database_module.database
@@ -22,6 +23,7 @@ __all__ = [
     "db",
     "table",
     "q",
+    "query",
     "col",
     "TableExpr",
 ]
